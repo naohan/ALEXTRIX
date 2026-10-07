@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ALEXTRIX HealthConnect - Tiempo real</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="header-content">
+        <div class="logo">
+          <i class="fas fa-heartbeat"></i>
+          <h1>ALEXTRIX HealthConnect</h1>
+        </div>
+        <div class="connection-status" id="connectionStatus">
+          <i class="fas fa-circle"></i>
+          <span>Conectando...</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <div class="dashboard-grid">
+        <div class="metric-card heart-rate">
+          <div class="metric-icon">
+            <i class="fas fa-heartbeat"></i>
+          </div>
+          <div class="metric-content">
+            <div class="metric-label">Frecuencia Cardíaca</div>
+            <div class="metric-value" id="heartRate">--</div>
+            <div class="metric-unit">bpm</div>
+          </div>
+          <div class="metric-status" id="heartRateStatus">
+            <i class="fas fa-check-circle"></i>
+          </div>
+        </div>
+
+        <div class="metric-card location">
+          <div class="metric-icon">
+            <i class="fas fa-map-marker-alt"></i>
+          </div>
+          <div class="metric-content">
+            <div class="metric-label">Ubicación</div>
+            <div class="metric-coords" id="location">
+              <div class="coord">Lat: <span id="latitude">--</span></div>
+              <div class="coord">Lon: <span id="longitude">--</span></div>
+            </div>
+          </div>
+          <div class="metric-status" id="locationStatus">
+            <i class="fas fa-check-circle"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-panels">
+        <div class="panel patient-info">
+          <h3><i class="fas fa-user"></i> Información del Paciente</h3>
+          <div class="patient-details">
+            <div class="detail-item">
+              <span class="label">ID Usuario:</span>
+              <span class="value" id="userId">--</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Última actualización:</span>
+              <span class="value" id="lastUpdate">--</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel alerts-panel">
+          <h3><i class="fas fa-exclamation-triangle"></i> Alertas</h3>
+          <div class="alerts-container" id="alertsContainer">
+            <div class="no-alerts">
+              <i class="fas fa-check-circle"></i>
+              <span>Sin alertas</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <link rel="stylesheet" href="styles.css">
+  <script src="config.js"></script>
+  <script>
+    class HealthMonitor {
+      constructor() {
+        this.socket = null;
+        this.wsUrl = window.APP_CONFIG?.WS_URL || 'ws://127.0.0.1:8000/ws/datos';
+        this.connect();
+        this.initEventListeners();
+      }
+
+      connect() {
+        try {
+          // Mostrar estado de conexión
+          this.updateConnectionStatus('connecting');
+          
+          this.socket = new WebSocket(this.wsUrl);
+          
+          this.socket.onopen = () => {
+            this.updateConnectionStatus('connected');
+          };
+
+          this.socket.onmessage = (event) => {
+            try {
+              const data = JSON.parse(event.data);
+              const normalizedData = this.normalizeData(data);
+              this.updateMetrics(normalizedData);
+              this.checkAlerts(normalizedData);
+            } catch (error) {
+              console.error('Error parsing WebSocket data:', error);
+              console.error('Raw data:', event.data);
+            }
+          };
+
+          this.socket.onclose = () => {
+            this.updateConnectionStatus('disconnected');
+            // Intentar reconectar después de 3 segundos
+            setTimeout(() => {
+              this.updateConnectionStatus('connecting');
+              this.connect();
+            }, 3000);
+          };
+
+          this.socket.onerror = () => {
+            this.updateConnectionStatus('disconnected');
+          };
+        } catch (error) {
+          console.error('Error connecting to WebSocket:', error);
+          this.updateConnectionStatus('disconnected');
+        }
+      }
+
+      updateConnectionStatus(status) {
+        // status puede ser: 'connecting', 'connected', 'disconnected'
+        const statusElement = document.getElementById('connectionStatus');
+        if (!statusElement) return;
+        
+        const icon = statusElement.querySelector('i');
+        const text = statusElement.querySelector('span');
+        
+        switch (status) {
+          case 'connecting':
+            statusElement.className = 'connection-status connecting';
+            icon.className = 'fas fa-circle';
+            text.textContent = 'Conectando...';
+            // Mostrar "..." en las métricas si no hay datos
+            this.showConnectingState();
+            break;
+          case 'connected':
+            statusElement.className = 'connection-status connected';
+            icon.className = 'fas fa-circle';
+            text.textContent = 'Conectado';
+            break;
+          case 'disconnected':
+          default:
+            statusElement.className = 'connection-status disconnected';
+            icon.className = 'fas fa-circle';
+            text.textContent = 'Desconectado';
+            break;
+        }
+      }
+      
+      showConnectingState() {
+        // Mostrar "..." en las métricas cuando está conectando
+        const heartRate = document.getElementById('heartRate');
+        const latitude = document.getElementById('latitude');
+        const longitude = document.getElementById('longitude');
+        
+        if (heartRate && heartRate.textContent === '--') {
+          heartRate.textContent = '...';
+        }
+        if (latitude && latitude.textContent === '--') {
+          latitude.textContent = '...';
+        }
+        if (longitude && longitude.textContent === '--') {
+          longitude.textContent = '...';
+        }
+      }
+
+      normalizeData(data) {
+        // Normalizar datos para compatibilidad con diferentes formatos del backend
+        if (!data.frecuenciaCardiaca && !data.frecuencia_cardiaca) {
+          if (data.data) return this.normalizeData(data.data);
+        }
+        
+        // Normalizar GPS
+        if (!data.gps && (data.lat || data.latitude || data.lon || data.longitude)) {
+          data.gps = {
+            lat: data.lat || data.latitude,
+            lon: data.lon || data.longitude || data.lng
+          };
+        }
+        
+        return data;
+      }
+
+      updateMetrics(data) {
+        // Normalizar datos primero
+        const normalizedData = this.normalizeData(data);
+        
+        // Actualizar frecuencia cardíaca
+        const heartRateEl = document.getElementById('heartRate');
+        if (heartRateEl) {
+          const bpm = normalizedData.frecuenciaCardiaca || normalizedData.frecuencia_cardiaca;
+          heartRateEl.textContent = bpm || '--';
+          this.updateMetricStatus('heartRateStatus', this.getHeartRateStatus(bpm));
+        }
+
+        // SpO2 y temperatura eliminados de la interfaz
+
+        // Actualizar ubicación
+        const latEl = document.getElementById('latitude');
+        const lonEl = document.getElementById('longitude');
+        if (latEl && lonEl) {
+          const gps = normalizedData.gps || {};
+          const lat = gps.lat || gps.latitude;
+          const lon = gps.lon || gps.longitude || gps.lng;
+          latEl.textContent = lat || '--';
+          lonEl.textContent = lon || '--';
+          this.updateMetricStatus('locationStatus', lat && lon ? 'good' : 'warning');
+        }
+
+        // Actualizar información del paciente
+        const userIdEl = document.getElementById('userId');
+        const lastUpdateEl = document.getElementById('lastUpdate');
+        if (userIdEl) {
+          userIdEl.textContent = normalizedData.idUsuario || normalizedData.id_usuario || '--';
+        }
+        if (lastUpdateEl && normalizedData.timestamp) {
+          try {
+            const date = new Date(normalizedData.timestamp);
+            lastUpdateEl.textContent = date.toLocaleString();
+          } catch (e) {
+            lastUpdateEl.textContent = normalizedData.timestamp || '--';
+          }
+        }
+      }
+
+      updateMetricStatus(elementId, status) {
+        const statusEl = document.getElementById(elementId);
+        if (!statusEl) return;
+
+        const icon = statusEl.querySelector('i');
+        statusEl.className = `metric-status ${status}`;
+        
+        switch (status) {
+          case 'good':
+            icon.className = 'fas fa-check-circle';
+            break;
+          case 'warning':
+            icon.className = 'fas fa-exclamation-triangle';
+            break;
+          case 'danger':
+            icon.className = 'fas fa-times-circle';
+            break;
+          default:
+            icon.className = 'fas fa-question-circle';
+        }
+      }
+
+      getHeartRateStatus(heartRate) {
+        if (!heartRate) return 'warning';
+        if (heartRate < 60 || heartRate > 100) return 'danger';
+        return 'good';
+      }
+
+      getSpo2Status(spo2) {
+        if (!spo2) return 'warning';
+        if (spo2 < 95) return 'danger';
+        if (spo2 < 97) return 'warning';
+        return 'good';
+      }
+
+      getTemperatureStatus(temperature) {
+        if (!temperature) return 'warning';
+        if (temperature < 36 || temperature > 37.5) return 'danger';
+        return 'good';
+      }
+
+      checkAlerts(data) {
+        const alertsContainer = document.getElementById('alertsContainer');
+        const alerts = [];
+
+        // Normalizar datos para alertas
+        const normalizedData = this.normalizeData(data);
+        const bpm = normalizedData.frecuenciaCardiaca || normalizedData.frecuencia_cardiaca;
+
+        // Verificar alertas de frecuencia cardíaca
+        if (bpm && (bpm < 60 || bpm > 100)) {
+          alerts.push({
+            type: 'danger',
+            message: `Frecuencia cardíaca anormal: ${bpm} bpm`
+          });
+        }
+
+        // Alertas de SpO2 y temperatura eliminadas
+
+        this.displayAlerts(alerts, alertsContainer);
+      }
+
+      displayAlerts(alerts, container) {
+        if (alerts.length === 0) {
+          container.innerHTML = `
+            <div class="no-alerts">
+              <i class="fas fa-check-circle"></i>
+              <span>Sin alertas</span>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = alerts.map(alert => `
+          <div class="alert alert-${alert.type}">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>${alert.message}</span>
+          </div>
+        `).join('');
+      }
+
+      initEventListeners() {
+        // Agregar event listeners si es necesario
+      }
+    }
+
+    // Inicializar el monitor cuando el DOM esté listo
+    document.addEventListener('DOMContentLoaded', () => {
+      const monitor = new HealthMonitor();
+      // Mostrar estado inicial de conexión
+      monitor.updateConnectionStatus('connecting');
+    });
+  </script>
+</body>
+</html>

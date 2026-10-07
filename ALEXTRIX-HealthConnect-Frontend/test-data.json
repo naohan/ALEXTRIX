@@ -1,0 +1,72 @@
+{
+  "descripcion": "Datos de prueba para ALEXTRIX HealthConnect",
+  "nota": "Usa estos datos para probar el sistema con curl o Postman",
+  
+  "ejemplos": {
+    "normal": {
+      "idUsuario": "user123",
+      "frecuenciaCardiaca": 75,
+      "spo2": 98,
+      "skinTemp": 36.5,
+      "alerta": "Normal",
+      "gps": {
+        "lat": -16.3989,
+        "lon": -71.537
+      },
+      "timestamp": "2025-01-22T10:30:00"
+    },
+    
+    "estres_alto": {
+      "idUsuario": "user123",
+      "frecuenciaCardiaca": 135,
+      "spo2": 96,
+      "skinTemp": 37.2,
+      "alerta": "Normal",
+      "gps": {
+        "lat": -16.3995,
+        "lon": -71.5375
+      },
+      "timestamp": "2025-01-22T10:35:00"
+    },
+    
+    "baja_oxigenacion": {
+      "idUsuario": "user123",
+      "frecuenciaCardiaca": 88,
+      "spo2": 91,
+      "skinTemp": 36.8,
+      "alerta": "Normal",
+      "gps": {
+        "lat": -16.4000,
+        "lon": -71.5380
+      },
+      "timestamp": "2025-01-22T10:40:00"
+    },
+    
+    "golpe_calor": {
+      "idUsuario": "user123",
+      "frecuenciaCardiaca": 110,
+      "spo2": 95,
+      "skinTemp": 38.5,
+      "alerta": "Normal",
+      "gps": {
+        "lat": -16.4005,
+        "lon": -71.5385
+      },
+      "timestamp": "2025-01-22T10:45:00"
+    }
+  },
+  
+  "comandos_curl": {
+    "desarrollo_local": "curl -X POST http://127.0.0.1:8000/api/sensores -H 'Content-Type: application/json' -d '{...datos...}'",
+    "produccion": "curl -X POST https://tu-backend.onrender.com/api/sensores -H 'Content-Type: application/json' -d '{...datos...}'"
+  },
+  
+  "ubicaciones_ejemplo_arequipa": {
+    "tecsup": {"lat": -16.4328, "lon": -71.5450},
+    "plaza_armas": {"lat": -16.3988, "lon": -71.5350},
+    "misti": {"lat": -16.2937, "lon": -71.4091},
+    "yanahuara": {"lat": -16.3954, "lon": -71.5450}
+  }
+}
+
+

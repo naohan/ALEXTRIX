@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALEXTRIX HealthConnect Dashboard</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo-section">
+                <img src="img/logo.png" alt="ALEXTRIX Logo" class="logo-img" onerror="this.style.display='none'">
+                <div class="logo-text">
+                    <h1>ALEXTRIX HealthConnect</h1>
+                    <span class="subtitle">Dashboard de Monitoreo</span>
+                </div>
+            </div>
+            <div class="connection-status" id="connectionStatus">
+                <i class="fas fa-circle status-indicator"></i>
+                <span id="connectionText">Conectando...</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Alert Banner -->
+    <div class="alert-banner" id="alertBanner" style="display: none;">
+        <div class="alert-content">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span id="alertMessage"></span>
+            <button class="alert-close" onclick="closeAlert()">&times;</button>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <main class="main-dashboard">
+        <!-- Metrics Cards -->
+        <section class="metrics-section">
+            <div class="metric-card heart-rate" id="heartRateCard">
+                <div class="metric-icon">
+                    <i class="fas fa-heartbeat"></i>
+                </div>
+                <div class="metric-content">
+                    <h3>Frecuencia Cardíaca</h3>
+                    <div class="metric-value" id="heartRateValue">--</div>
+                    <div class="metric-unit">BPM</div>
+                    <div class="metric-status" id="heartRateStatus">Normal</div>
+                </div>
+            </div>
+
+            <div class="metric-card location" id="locationCard">
+                <div class="metric-icon">
+                    <i class="fas fa-map-marker-alt"></i>
+                </div>
+                <div class="metric-content">
+                    <h3>Ubicación GPS</h3>
+                    <div class="location-coords">
+                        <div class="coord">Lat: <span id="latitudeValue">--</span></div>
+                        <div class="coord">Lon: <span id="longitudeValue">--</span></div>
+                    </div>
+                    <div class="metric-status" id="locationStatus">Desconocida</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Charts Section -->
+        <section class="charts-section">
+            <div class="chart-container">
+                <h3><i class="fas fa-chart-line"></i> Frecuencia Cardíaca</h3>
+                <canvas id="heartRateChart"></canvas>
+            </div>
+        </section>
+
+        <!-- Map and Historical Data -->
+        <section class="map-data-section">
+            <div class="map-container">
+                <h3><i class="fas fa-map"></i> Ubicación en Tiempo Real</h3>
+                <div id="map"></div>
+            </div>
+            <div class="historical-container">
+                <h3><i class="fas fa-history"></i> Registros Históricos</h3>
+                <div class="table-container">
+                    <table class="historical-table">
+                        <thead>
+                            <tr>
+                                <th>Usuario</th>
+                                <th>BPM</th>
+                                <th>Lat</th>
+                                <th>Lon</th>
+                                <th>Fecha</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historicalData">
+                            <tr>
+                                <td colspan="5" class="loading">Cargando datos...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>Proyecto ALEXTRIX HealthConnect © 2025 – TECSUP Arequipa</p>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="config.js"></script>
+    <script src="dashboard.js"></script>
+    <script src="charts.js"></script>
+</body>
+</html>
